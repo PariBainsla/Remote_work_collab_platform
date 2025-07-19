@@ -39,6 +39,27 @@ function AuthForm() {
     }
   };
 
+  const fetchDashboard = async () => {
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    alert("No token found. Please login first.");
+    return;
+  }
+
+  try {
+    const res = await API.get('/protected/dashboard', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    alert(res.data.message); // Should show: "Welcome to the protected dashboard!"
+  } catch (err) {
+    console.error("Protected fetch error:", err);
+    alert(err.response?.data?.message || "Failed to access protected route");
+  }
+};
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
@@ -96,6 +117,14 @@ function AuthForm() {
             {isLogin ? 'Sign up' : 'Login'}
           </button>
         </p>
+        <div className="mt-6 text-center">
+  <button
+    onClick={fetchDashboard}
+    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+  >
+    Test Protected Dashboard Access
+  </button>
+</div>
       </div>
     </div>
   );
