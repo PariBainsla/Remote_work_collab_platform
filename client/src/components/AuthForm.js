@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import API from '../api';
+import { toast } from 'react-toastify';
 
-function AuthForm() {
+function AuthForm({ setToken }) {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
@@ -17,48 +18,45 @@ function AuthForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Submitting...');
-
     try {
       const endpoint = isLogin ? '/auth/login' : '/auth/signup';
       const payload = isLogin
         ? { email: formData.email, password: formData.password }
         : formData;
 
-      console.log('Payload:', payload);
-
       const res = await API.post(endpoint, payload);
 
-      console.log('Response:', res.data);
       localStorage.setItem('token', res.data.token);
-      alert(`${isLogin ? 'Login' : 'Signup'} successful!`);
-      // Optionally redirect or update auth state here
+      setToken(res.data.token); // ✅ This is now passed correctly from App
+
+      toast.success(`${isLogin ? 'Login' : 'Signup'} successful!`);
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Auth Error:', err);
+      toast.error(err.response?.data?.message || 'Something went wrong');
       setError(err.response?.data?.message || 'Something went wrong');
     }
   };
 
   const fetchDashboard = async () => {
-  const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
-  if (!token) {
-    alert("No token found. Please login first.");
-    return;
-  }
+    if (!token) {
+      toast.error("No token found. Please login first.");
+      return;
+    }
 
-  try {
-    const res = await API.get('/protected/dashboard', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    alert(res.data.message); // Should show: "Welcome to the protected dashboard!"
-  } catch (err) {
-    console.error("Protected fetch error:", err);
-    alert(err.response?.data?.message || "Failed to access protected route");
-  }
-};
+    try {
+      const res = await API.get('/protected/dashboard', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      toast.success(res.data.message);
+    } catch (err) {
+      console.error("Protected fetch error:", err);
+      toast.error(err.response?.data?.message || "Failed to access protected route");
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -76,6 +74,7 @@ function AuthForm() {
               onChange={handleChange}
               className="w-full p-2 mb-4 border border-gray-300 rounded"
               autoComplete="name"
+              required
             />
           )}
 
@@ -86,6 +85,7 @@ function AuthForm() {
             onChange={handleChange}
             className="w-full p-2 mb-4 border border-gray-300 rounded"
             autoComplete="email"
+            required
           />
 
           <input
@@ -95,6 +95,7 @@ function AuthForm() {
             onChange={handleChange}
             className="w-full p-2 mb-4 border border-gray-300 rounded"
             autoComplete={isLogin ? 'current-password' : 'new-password'}
+            required
           />
 
           <button
@@ -117,14 +118,15 @@ function AuthForm() {
             {isLogin ? 'Sign up' : 'Login'}
           </button>
         </p>
+
         <div className="mt-6 text-center">
-  <button
-    onClick={fetchDashboard}
-    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
-  >
-    Test Protected Dashboard Access
-  </button>
-</div>
+          <button
+            onClick={fetchDashboard}
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+          >
+            Test Protected Dashboard Access
+          </button>
+        </div>
       </div>
     </div>
   );
