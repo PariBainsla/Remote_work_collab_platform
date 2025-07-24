@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import API from '../api';
 import { toast } from 'react-toastify';
+import Spinner from './Spinner';
 
 function AuthForm({ setToken }) {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const toggleForm = () => {
     setIsLogin(!isLogin);
@@ -16,47 +18,50 @@ function AuthForm({ setToken }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const endpoint = isLogin ? '/auth/login' : '/auth/signup';
-      const payload = isLogin
-        ? { email: formData.email, password: formData.password }
-        : formData;
+  
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  try {
+    const endpoint = isLogin ? '/auth/login' : '/auth/signup';
+    const payload = isLogin
+      ? { email: formData.email, password: formData.password }
+      : formData;
 
-      const res = await API.post(endpoint, payload);
+    const res = await API.post(endpoint, payload);
 
-      localStorage.setItem('token', res.data.token);
-      setToken(res.data.token); // ✅ This is now passed correctly from App
+    localStorage.setItem('token', res.data.token);
+    setToken(res.data.token);
+    toast.success(`${isLogin ? 'Login' : 'Signup'} successful!`);
+  } catch (err) {
+    console.error('Auth Error:', err);
+    toast.error(err.response?.data?.message || 'Something went wrong');
+    setError(err.response?.data?.message || 'Something went wrong');
+  } finally {
+    setLoading(false);
+  }
+};
 
-      toast.success(`${isLogin ? 'Login' : 'Signup'} successful!`);
-    } catch (err) {
-      console.error('Auth Error:', err);
-      toast.error(err.response?.data?.message || 'Something went wrong');
-      setError(err.response?.data?.message || 'Something went wrong');
-    }
-  };
+  // const fetchDashboard = async () => {
+  //   const token = localStorage.getItem('token');
 
-  const fetchDashboard = async () => {
-    const token = localStorage.getItem('token');
+  //   if (!token) {
+  //     toast.error("No token found. Please login first.");
+  //     return;
+  //   }
 
-    if (!token) {
-      toast.error("No token found. Please login first.");
-      return;
-    }
-
-    try {
-      const res = await API.get('/protected/dashboard', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      toast.success(res.data.message);
-    } catch (err) {
-      console.error("Protected fetch error:", err);
-      toast.error(err.response?.data?.message || "Failed to access protected route");
-    }
-  };
+  //   try {
+  //     const res = await API.get('/protected/dashboard', {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+  //     toast.success(res.data.message);
+  //   } catch (err) {
+  //     console.error("Protected fetch error:", err);
+  //     toast.error(err.response?.data?.message || "Failed to access protected route");
+  //   }
+  // };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -107,6 +112,8 @@ function AuthForm({ setToken }) {
 
           {error && <p className="text-red-500 mt-3 text-sm">{error}</p>}
         </form>
+        {loading && <Spinner />}
+
 
         <p className="mt-4 text-center text-sm">
           {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
@@ -120,12 +127,12 @@ function AuthForm({ setToken }) {
         </p>
 
         <div className="mt-6 text-center">
-          <button
+          {/* <button
             onClick={fetchDashboard}
             className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
           >
             Test Protected Dashboard Access
-          </button>
+          </button> */}
         </div>
       </div>
     </div>
